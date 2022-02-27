@@ -13,7 +13,7 @@ The search engine is implemented to do two main things: (a) gather and index key
 
 ### Executing Program
 
-To execute this program: a driver can take as inputs a file that contians the names of all the documents (such as docs.txt) and then set up a LittleSearchEngine object to call its methods as needed to test the implementation. The docs.txt and noisewords.txt filenames will be sent in as arguments to the makeIndex method in LittleSearchEngine.
+A driver can take as inputs a file that contians the names of all the documents (such as docs.txt) and then set up a LittleSearchEngine object to call its methods as needed to test the implementation. The docs.txt and noisewords.txt filenames will be sent in as arguments to the makeIndex method in LittleSearchEngine.
 Some example textfiles are provided: ptest1.txt, ptest2.txt, ptest1opp.txt
 
 
