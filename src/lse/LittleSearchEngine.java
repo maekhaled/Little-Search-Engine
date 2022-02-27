@@ -40,12 +40,39 @@ public class LittleSearchEngine {
 	 */
 	public HashMap<String,Occurrence> loadKeywordsFromDocument(String docFile) 
 	throws FileNotFoundException {
-		/** COMPLETE THIS METHOD **/
 		
-		// following line is a placeholder to make the program compile
-		// you should modify it as needed when you write your code
-		return null;
+		HashMap<String, Occurrence> docKeywords = new HashMap<String, Occurrence>();
+		File doc = new File(docFile);
+		
+		Scanner input = new Scanner(doc);
+		while(input.hasNext() == true) {
+			String word = input.next();
+			String keyword = getKeyword(word);
+			if(keyword == null) {
+				continue;
+				}
+			else {
+				docKeywords=addKeyword(keyword, docFile, docKeywords);
+			}
+		}
+		input.close();
+		
+		return docKeywords;
 	}
+	
+	private HashMap<String,Occurrence> addKeyword(String keyword, String docFile, HashMap<String,Occurrence> docKeywords) {
+		
+		if (docKeywords.containsKey(keyword)) {
+			int oldfreq = docKeywords.get(keyword).frequency;
+			docKeywords.put(keyword, new Occurrence(docFile,oldfreq+1));		
+		}
+		else {
+			docKeywords.put(keyword,new Occurrence(docFile,1));
+		}
+		return docKeywords;
+		
+	}
+	
 	
 	/**
 	 * Merges the keywords for a single document into the master keywordsIndex
@@ -57,8 +84,20 @@ public class LittleSearchEngine {
 	 * @param kws Keywords hash table for a document
 	 */
 	public void mergeKeywords(HashMap<String,Occurrence> kws) {
-		/** COMPLETE THIS METHOD **/
+		
+		for (String key: kws.keySet()) {
+			if(keywordsIndex.get(key)== null) {
+				ArrayList<Occurrence> newOcc = new ArrayList<Occurrence>();
+				newOcc.add(kws.get(key));
+				keywordsIndex.put(key, newOcc);
+			}
+			else {
+				keywordsIndex.get(key).add(kws.get(key));	
+				insertLastOccurrence(keywordsIndex.get(key));
+			}
+		}	
 	}
+		
 	
 	/**
 	 * Given a word, returns it as a keyword if it passes the keyword test,
@@ -78,11 +117,38 @@ public class LittleSearchEngine {
 	 * @return Keyword (word without trailing punctuation, LOWER CASE)
 	 */
 	public String getKeyword(String word) {
-		/** COMPLETE THIS METHOD **/
+	
+		/// check if all alpha characters
+		int length = word.length();
+		boolean letters = false;
+		int trail = 0;
+		for(int i=length-1; i >= 0 ; i--) {
+			char temp = word.charAt(i);
+			if(!Character.isLetter(temp)){
+				if (letters == true) {
+					return null;
+				}
+				if(temp == '.' || temp == ',' || temp == '?' || temp == ':' || temp == ';' || temp == '!') {
+					trail++;
+				}
+				else {
+					return null;
+				}
+			}
+			else {
+				letters = true;
+			}
+		}
 		
-		// following line is a placeholder to make the program compile
-		// you should modify it as needed when you write your code
-		return null;
+		word = word.substring(0,length-trail);
+		if (length-trail == 0) {
+			return null;
+		}
+		/// check if word is noise word
+		if(noiseWords.contains(word.toLowerCase())) {
+			return null;
+		}
+		return word.toLowerCase();
 	}
 	
 	/**
@@ -97,11 +163,44 @@ public class LittleSearchEngine {
 	 *         your code - it is not used elsewhere in the program.
 	 */
 	public ArrayList<Integer> insertLastOccurrence(ArrayList<Occurrence> occs) {
-		/** COMPLETE THIS METHOD **/
 		
-		// following line is a placeholder to make the program compile
-		// you should modify it as needed when you write your code
-		return null;
+		if(occs.size() == 1){
+			return null;
+		}
+		
+		ArrayList<Integer> midlist = new ArrayList<Integer>();
+		Occurrence lastocc = occs.get(occs.size()-1);
+		int target = lastocc.frequency;
+		int lo = 0;
+		int hi = occs.size()-2;
+		int mid = 0;
+		int midfreq = 0;	
+		occs.remove(occs.size()-1);
+		
+		while(lo <= hi) {
+			mid = (lo + hi)/2;
+			midlist.add(mid);
+			midfreq = occs.get(mid).frequency;
+			if(target == midfreq){
+				occs.add(mid, lastocc);
+				return midlist;
+			}
+			if(target > midfreq) {
+				hi = mid-1;
+			}
+			else {
+				lo = mid+1;
+			}
+		}
+		
+		if (midfreq > target) {
+			occs.add(mid+1,lastocc);
+		}
+		else {
+			occs.add(mid, lastocc);
+		}
+		
+		return midlist;
 	}
 	
 	/**
@@ -154,11 +253,72 @@ public class LittleSearchEngine {
 	 *         returns null or empty array list.
 	 */
 	public ArrayList<String> top5search(String kw1, String kw2) {
-		/** COMPLETE THIS METHOD **/
 		
-		// following line is a placeholder to make the program compile
-		// you should modify it as needed when you write your code
-		return null;
+		ArrayList<String> result = new ArrayList<String>();
+		ArrayList<Occurrence> list1 = keywordsIndex.get(kw1.toLowerCase());
+		ArrayList<Occurrence> list2 = keywordsIndex.get(kw2.toLowerCase());
+		
+		if (list1 == null && list2 == null) {
+			return null;
+		}
+
+		int i = 0;
+		int j = 0;
+		if(list1 != null && list2 !=null) {
+		while((i<list1.size()) && (j<list2.size()) && result.size()<5) {
+			if(list1.get(i).frequency >= list2.get(j).frequency) {
+				if(!result.contains(list1.get(i).document)) {
+					result.add(list1.get(i).document);
+				}
+				i++;
+			}
+			else {
+				if(!result.contains(list2.get(j).document)){
+					result.add(list2.get(j).document);
+				}
+				j++;
+			}
+			}
+		
+		if (((i == list1.size()) && (j == list2.size())) || result.size()==5 ) {
+			return result;
+		}
+		if(i == list1.size() || j == list2.size()) {
+			ArrayList<Occurrence> remaining = (i == list1.size()) ? list2 : list1;
+			int index = (remaining == list1) ? j : i;
+			
+			for(; index < remaining.size(); index++) {
+				if (result.size() == 5) {
+					return result;
+				}
+				if(result.contains(remaining.get(index).document)) {
+					continue;
+				}
+				else {
+				result.add(remaining.get(index).document);
+				}
+			}
+		}
+	return result;
+	}
 	
+	if((list1 == null) || (list2 == null)) {
+		
+			ArrayList<Occurrence> remaining = (list1 == null) ? list2 : list1;
+			
+			for(int k = 0; k < remaining.size(); k++) {
+				if (result.size() == 5) {
+					return result;
+				}
+				if(result.contains(remaining.get(k).document)) {
+					continue;
+				}
+				else {
+				result.add(remaining.get(k).document);
+				}
+			}
+			return result;
+		}
+	return result;
 	}
 }
